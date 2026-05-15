@@ -353,14 +353,15 @@
         
         let attemptsUsed = 0;
         let gameActive = true;
-        let currentTargetPrizeIndex = -1;
         
         let isSlowingDown = false;
+        let slowAnimationId = null;
 
         const overlay = document.getElementById('prizeOverlay');
         const prizeWinText = document.getElementById('prizeWinText');
         const prizeMessage = document.getElementById('prizeMessage');
         const prizeButtons = document.getElementById('prizeButtons');
+        const stopBtn = document.getElementById('stopBtn');
 
         function findSectorIndex(prizeText) {
             let idx = SECTORS.indexOf(prizeText);
@@ -501,9 +502,10 @@
                     overlay.classList.remove('show');
                     attemptsUsed++;
                     updateAttemptUI();
+                    // Восстанавливаем скорость и включаем кнопку
                     spinVelocity = 20;
                     isSlowingDown = false;
-                    document.getElementById('stopBtn').disabled = false;
+                    stopBtn.disabled = false;
                 };
                 prizeButtons.appendChild(againBtn);
             } else {
@@ -521,7 +523,7 @@
                 finishBtn.onclick = () => {
                     overlay.classList.remove('show');
                     gameActive = false;
-                    document.getElementById('stopBtn').disabled = true;
+                    stopBtn.disabled = true;
                     spinning = false;
                     if (animFrame) {
                         cancelAnimationFrame(animFrame);
@@ -546,8 +548,6 @@
 
         function slowDownAndShowPrize() {
             const targetPrize = getTargetPrizeForAttempt(attemptsUsed);
-            const targetPrizeIndex = findSectorIndex(targetPrize);
-            currentTargetPrizeIndex = targetPrizeIndex;
             const isLastAttempt = (attemptsUsed === 2);
             
             const originalSpeed = spinVelocity;
@@ -562,47 +562,30 @@
                 spinVelocity = Math.max(newVel, 3);
                 
                 if (t < 1) {
-                    requestAnimationFrame(slowStep);
+                    slowAnimationId = requestAnimationFrame(slowStep);
                 } else {
                     spinVelocity = originalSpeed;
                     isSlowingDown = false;
+                    slowAnimationId = null;
                     showPrizeWindow(targetPrize, isLastAttempt);
                 }
             }
             
-            requestAnimationFrame(slowStep);
+            if (slowAnimationId) cancelAnimationFrame(slowAnimationId);
+            slowAnimationId = requestAnimationFrame(slowStep);
         }
 
-        function startNewSpinAttempt() {
-            if (attemptsUsed >= 3) {
-                gameActive = false;
-                document.getElementById('stopBtn').disabled = true;
-                return;
-            }
-            
-            const target = getTargetPrizeForAttempt(attemptsUsed);
-            currentTargetPrizeIndex = findSectorIndex(target);
-            
-            document.getElementById('stopBtn').disabled = false;
-            spinVelocity = 20;
-            isSlowingDown = false;
-        }
-
-        function initFirstAttempt() {
+        function initGame() {
             attemptsUsed = 0;
             gameActive = true;
             updateAttemptUI();
-            
-            const target = getTargetPrizeForAttempt(0);
-            currentTargetPrizeIndex = findSectorIndex(target);
-            
-            document.getElementById('stopBtn').disabled = false;
             spinVelocity = 22;
             spinning = true;
+            isSlowingDown = false;
+            stopBtn.disabled = false;
             spinAnimation();
         }
 
-        const stopBtn = document.getElementById('stopBtn');
         stopBtn.addEventListener('click', () => {
             if (!gameActive) return;
             if (!isSlowingDown) {
@@ -617,7 +600,7 @@
         });
 
         resizeCanvas();
-        initFirstAttempt();
+        initGame();
     })();
 </script>
 </body>
