@@ -520,6 +520,7 @@
             overlay.classList.add('show');
         }
 
+        // Функция: замедление 5 секунд, но НЕ ОСТАНАВЛИВАЕТСЯ, просто показывает приз
         function start5SecondDeceleration() {
             if (animFrame) {
                 cancelAnimationFrame(animFrame);
@@ -536,29 +537,34 @@
             const startTime = performance.now();
             const duration = 5000;
             
-            function decelerateAndStop(now) {
+            function decelerateAndShow(now) {
                 const elapsed = now - startTime;
                 let t = Math.min(1, elapsed / duration);
-                const currentVel = startVelocity * (1 - t);
-                spinVelocity = Math.max(currentVel, 0);
+                // Плавное замедление, но не до 0
+                const currentVel = startVelocity * (1 - t * 0.85);
+                spinVelocity = Math.max(currentVel, 3);
                 
                 currentAngle += spinVelocity * 0.035;
                 currentAngle = currentAngle % (2 * Math.PI);
                 drawWheel();
                 
                 if (t < 1) {
-                    slowAnimFrame = requestAnimationFrame(decelerateAndStop);
+                    slowAnimFrame = requestAnimationFrame(decelerateAndShow);
                 } else {
-                    spinVelocity = 0;
+                    // Через 5 секунд показываем приз, колесо продолжает крутиться
                     if (slowAnimFrame) cancelAnimationFrame(slowAnimFrame);
                     slowAnimFrame = null;
                     isStopping = false;
                     showPrizeWindow(targetPrize, isLastAttempt);
+                    // Колесо продолжает крутиться с малой скоростью
+                    spinning = true;
+                    spinVelocity = 5;
+                    spinAnimation();
                 }
             }
             
             if (slowAnimFrame) cancelAnimationFrame(slowAnimFrame);
-            slowAnimFrame = requestAnimationFrame(decelerateAndStop);
+            slowAnimFrame = requestAnimationFrame(decelerateAndShow);
         }
 
         function spinAnimation() {
