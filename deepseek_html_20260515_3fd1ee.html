@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Рулетка для Иры | Подарок от коллег</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f5ede4 0%, #e8d9cc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Quicksand', system-ui, -apple-system, 'Roboto', sans-serif;
+            margin: 0;
+            padding: 12px;
+            position: relative;
+        }
+
+        body::before {
+            content: "☁️ ☁️";
+            position: fixed;
+            top: 5px;
+            left: 0;
+            right: 0;
+            font-size: 60px;
+            color: rgba(210, 170, 130, 0.3);
+            text-align: center;
+            pointer-events: none;
+            letter-spacing: 30px;
+            z-index: 0;
+        }
+
+        body::after {
+            content: "🌸 🌾 🌸";
+            position: fixed;
+            bottom: 5px;
+            left: 0;
+            right: 0;
+            font-size: 45px;
+            color: rgba(170, 120, 80, 0.25);
+            text-align: center;
+            pointer-events: none;
+            letter-spacing: 20px;
+            z-index: 0;
+        }
+
+        .wheel-container {
+            background: rgba(255, 250, 242, 0.94);
+            backdrop-filter: blur(8px);
+            border-radius: 48px;
+            padding: 12px 12px 20px;
+            box-shadow: 0 12px 28px rgba(80, 50, 25, 0.25);
+            max-width: 480px;
+            width: 100%;
+            margin: auto;
+            border: 1px solid rgba(245, 210, 170, 0.7);
+            z-index: 2;
+            position: relative;
+        }
+
+        .hero-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #b87a55, #d6a17a);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-top: -5px;
+            margin-bottom: 4px;
+        }
+
+        .hero-sub {
+            text-align: center;
+            font-size: 1rem;
+            color: #a06e48;
+            background: #fceeddcc;
+            display: inline-block;
+            width: auto;
+            margin: 0 auto 12px;
+            padding: 5px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+
+        .wheel-outer {
+            position: relative;
+            width: 100%;
+            max-width: 290px;
+            margin: 0 auto 12px;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            background: #fcf5ea;
+            border-radius: 50%;
+            box-shadow: 0 12px 22px rgba(70, 40, 15, 0.25);
+            display: block;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-top: 40px solid #e6b17e;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+            z-index: 10;
+        }
+
+        .pointer::after {
+            content: "🌸";
+            position: absolute;
+            top: -44px;
+            left: -12px;
+            font-size: 24px;
+            color: #cf8b5a;
+            text-shadow: 0 1px 2px white;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin: 8px 0 12px;
+        }
+
+        button {
+            background: #ddb48b;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 50px;
+            color: #3e2a1c;
+            box-shadow: 0 5px 0 #8b5a3a;
+            transition: 0.05s linear;
+            cursor: pointer;
+            font-family: inherit;
+            width: 65%;
+            max-width: 200px;
+            letter-spacing: 0.5px;
+        }
+
+        button:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #8b5a3a;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            transform: translateY(0);
+            cursor: not-allowed;
+        }
+
+        .attempt-info {
+            text-align: center;
+            background: #ffe6d6cc;
+            border-radius: 40px;
+            padding: 6px 12px;
+            margin: 8px 8px 8px;
+            color: #8b5a3a;
+            font-weight: bold;
+            font-size: 0.9rem;
+            backdrop-filter: blur(4px);
+            border: 1px solid #f5cfb5;
+        }
+
+        .prize-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.2s, opacity 0.2s;
+        }
+
+        .prize-overlay.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .prize-card {
+            background: #fffaf5;
+            border-radius: 56px;
+            padding: 24px 20px;
+            max-width: 280px;
+            width: 85%;
+            text-align: center;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.3);
+            border: 2px solid #f3cfb0;
+            transform: scale(0.9);
+            transition: transform 0.25s ease-out;
+        }
+
+        .prize-overlay.show .prize-card {
+            transform: scale(1);
+        }
+
+        .prize-text {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #9e5f38;
+            margin: 10px 0;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+
+        .prize-again-btn {
+            background: #cf9f78;
+            box-shadow: 0 4px 0 #7a5034;
+            color: white;
+            font-size: 1.1rem;
+            padding: 10px 20px;
+            border-radius: 60px;
+            border: none;
+            font-weight: bold;
+            margin-top: 12px;
+            width: 80%;
+            cursor: pointer;
+        }
+
+        .prize-again-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #7a5034;
+        }
+
+        .look-btn {
+            background: #d48f5b;
+            box-shadow: 0 4px 0 #8b5a3a;
+            color: white;
+            font-size: 1.1rem;
+            padding: 10px 20px;
+            border-radius: 60px;
+            border: none;
+            font-weight: bold;
+            margin-top: 12px;
+            width: 80%;
+            cursor: pointer;
+        }
+
+        .look-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #8b5a3a;
+        }
+
+        .final-note {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #bc8862;
+            margin-top: 12px;
+            background: #fff1e6aa;
+            display: inline-block;
+            width: auto;
+            padding: 3px 12px;
+            border-radius: 40px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (max-width: 450px) {
+            .wheel-outer { max-width: 260px; }
+            .hero-title { font-size: 1.3rem; }
+            .hero-sub { font-size: 0.85rem; }
+            button { font-size: 1rem; padding: 8px 16px; }
+            .prize-text { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="wheel-container">
+    <div class="hero-title">🎡 РУЛЕТКА ПОДАРКОВ</div>
+    <div style="text-align: center;">
+        <span class="hero-sub">✨ Ира, выиграй подарок от коллег ✨</span>
+    </div>
+
+    <div class="wheel-outer">
+        <canvas id="wheelCanvas" width="500" height="500"></canvas>
+        <div class="pointer"></div>
+    </div>
+
+    <div class="attempt-info" id="attemptDisplay">🎲 Попытка 1 из 3</div>
+    <div class="controls">
+        <button id="stopBtn">ОСТАНОВИТЬ</button>
+    </div>
+    <div class="final-note" id="infoNote">
+        🌾 три попытки — три особенных сюрприза
+    </div>
+</div>
+
+<div id="prizeOverlay" class="prize-overlay">
+    <div class="prize-card">
+        <div class="prize-text" id="prizeWinText">Вы выиграли!</div>
+        <div id="prizeButtons"></div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const SECTORS = [
+            "Напутствие",
+            "Цветы! Упс, уже есть, крути снова",
+            "Сертификат",
+            "Сегодня отличный день, крути снова",
+            "Обнимашки",
+            "Пожелание от человека справа",
+            "Пожелание от человека слева",
+            "Ты солнышко, крути снова",
+            "Тост от коллеги"
+        ];
+
+        const COLORS = [
+            "#FADADD", "#F9E2CF", "#FFD9B5", "#F8D7CF", "#EFCDB2",
+            "#FCE4D6", "#F6D5C9", "#FFF0E0", "#F6E2D3"
+        ];
+
+        let canvas = document.getElementById('wheelCanvas');
+        let ctx = canvas.getContext('2d');
+        let width, height;
+
+        let currentAngle = 0;
+        let spinning = false;
+        let animFrame = null;
+        let spinVelocity = 0;
+        
+        let attemptsUsed = 0;
+        let gameActive = true;
+        let currentTargetPrizeIndex = -1;
+        
+        let isStopping = false;
+        let slowAnimFrame = null;
+
+        const overlay = document.getElementById('prizeOverlay');
+        const prizeWinText = document.getElementById('prizeWinText');
+        const prizeButtons = document.getElementById('prizeButtons');
+
+        function findSectorIndex(prizeText) {
+            let idx = SECTORS.indexOf(prizeText);
+            return idx !== -1 ? idx : 0;
+        }
+
+        function getTargetPrizeForAttempt(attemptNumber) {
+            if (attemptNumber === 0) return "Напутствие";
+            if (attemptNumber === 1) return "Цветы! Упс, уже есть, крути снова";
+            return "Сертификат";
+        }
+
+        function updateAttemptUI() {
+            let text = attemptsUsed >= 3 ? "ИГРА ЗАВЕРШЕНА" : `Попытка ${attemptsUsed + 1} из 3`;
+            document.getElementById('attemptDisplay').innerHTML = `🎲 ${text}`;
+        }
+
+        function drawWheel() {
+            if (!ctx) return;
+            const w = width, h = height;
+            ctx.clearRect(0, 0, w, h);
+            const N = SECTORS.length;
+            const angleStep = (Math.PI * 2) / N;
+            const cx = w / 2, cy = h / 2;
+            const r = w / 2;
+
+            for (let i = 0; i < N; i++) {
+                const start = currentAngle + i * angleStep;
+                const end = start + angleStep;
+
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r, start, end);
+                ctx.fillStyle = COLORS[i % COLORS.length];
+                ctx.fill();
+                ctx.strokeStyle = "#FFF2E4";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                const midAngle = start + angleStep / 2;
+                const textR = r * 0.52;
+                const x = cx + Math.cos(midAngle) * textR;
+                const y = cy + Math.sin(midAngle) * textR;
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(midAngle + Math.PI);
+                
+                let fontSize = Math.max(8.5, r * 0.042);
+                ctx.font = `bold ${fontSize}px "Segoe UI", "Quicksand"`;
+                ctx.fillStyle = "#3f2a1a";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                
+                let label = SECTORS[i];
+                if (label === "Цветы! Упс, уже есть, крути снова") {
+                    ctx.fillText("Цветы! Упс,", 0, -5);
+                    ctx.fillText("уже есть,", 0, 5);
+                    ctx.fillText("крути снова", 0, 14);
+                } 
+                else if (label === "Сегодня отличный день, крути снова") {
+                    ctx.fillText("Сегодня", 0, -7);
+                    ctx.fillText("отличный день,", 0, 2);
+                    ctx.fillText("крути снова", 0, 12);
+                }
+                else if (label === "Ты солнышко, крути снова") {
+                    ctx.fillText("Ты солнышко,", 0, -4);
+                    ctx.fillText("крути снова", 0, 8);
+                }
+                else if (label === "Пожелание от человека справа") {
+                    ctx.fillText("Пожелание от", 0, -5);
+                    ctx.fillText("человека", 0, 5);
+                    ctx.fillText("справа", 0, 14);
+                }
+                else if (label === "Пожелание от человека слева") {
+                    ctx.fillText("Пожелание от", 0, -5);
+                    ctx.fillText("человека", 0, 5);
+                    ctx.fillText("слева", 0, 14);
+                }
+                else if (label === "Напутствие") {
+                    ctx.fillText("Напутствие", 0, 0);
+                }
+                else if (label === "Сертификат") {
+                    ctx.fillText("Сертификат", 0, 0);
+                }
+                else if (label === "Обнимашки") {
+                    ctx.fillText("Обнимашки", 0, 0);
+                }
+                else if (label === "Тост от коллеги") {
+                    ctx.fillText("Тост от", 0, -5);
+                    ctx.fillText("коллеги", 0, 7);
+                }
+                else {
+                    let short = label.length > 16 ? label.slice(0,14)+".." : label;
+                    ctx.fillText(short, 0, 0);
+                }
+                ctx.restore();
+            }
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, r * 0.11, 0, 2 * Math.PI);
+            ctx.fillStyle = "#F3DEC4";
+            ctx.fill();
+            ctx.fillStyle = "#bc7a4a";
+            ctx.font = `bold ${r * 0.09}px "Segoe UI"`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🌾", cx, cy + 2);
+        }
+
+        function resizeCanvas() {
+            let container = document.querySelector('.wheel-outer');
+            let size = Math.min(container.clientWidth, 290);
+            canvas.width = size;
+            canvas.height = size;
+            width = size;
+            height = size;
+            drawWheel();
+        }
+
+        function showPrizeWindow(prizeText, isLast) {
+            prizeWinText.innerText = prizeText;
+            prizeButtons.innerHTML = '';
+            
+            if (!isLast) {
+                const againBtn = document.createElement('button');
+                againBtn.innerText = "ЕЩЁ РАЗ";
+                againBtn.className = 'prize-again-btn';
+                againBtn.onclick = () => {
+                    overlay.classList.remove('show');
+                    attemptsUsed++;
+                    updateAttemptUI();
+                    startNewSpinAttempt();
+                };
+                prizeButtons.appendChild(againBtn);
+            } else {
+                const lookBtn = document.createElement('button');
+                lookBtn.innerText = "Хочу посмотреть!";
+                lookBtn.className = 'look-btn';
+                lookBtn.onclick = () => {
+                    window.open('https://copilot.microsoft.com/th/id/BCO.42f8fa6a-2c6b-43cb-844f-933f000acc5a.png', '_blank');
+                };
+                prizeButtons.appendChild(lookBtn);
+                
+                const finishBtn = document.createElement('button');
+                finishBtn.innerText = "ЗАВЕРШИТЬ";
+                finishBtn.className = 'prize-again-btn';
+                finishBtn.onclick = () => {
+                    overlay.classList.remove('show');
+                    gameActive = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    if (animFrame) {
+                        cancelAnimationFrame(animFrame);
+                        animFrame = null;
+                    }
+                    if (slowAnimFrame) {
+                        cancelAnimationFrame(slowAnimFrame);
+                        slowAnimFrame = null;
+                    }
+                    spinning = false;
+                };
+                prizeButtons.appendChild(finishBtn);
+            }
+            
+            overlay.classList.add('show');
+        }
+
+        function start5SecondDeceleration() {
+            if (animFrame) {
+                cancelAnimationFrame(animFrame);
+                animFrame = null;
+            }
+            
+            spinning = false;
+            isStopping = true;
+            
+            const targetPrize = SECTORS[currentTargetPrizeIndex];
+            const isLastAttempt = (attemptsUsed === 2);
+            
+            const startVelocity = spinVelocity;
+            const startTime = performance.now();
+            const duration = 5000;
+            
+            function decelerateAndStop(now) {
+                const elapsed = now - startTime;
+                let t = Math.min(1, elapsed / duration);
+                const currentVel = startVelocity * (1 - t);
+                spinVelocity = Math.max(currentVel, 0);
+                
+                currentAngle += spinVelocity * 0.035;
+                currentAngle = currentAngle % (2 * Math.PI);
+                drawWheel();
+                
+                if (t < 1) {
+                    slowAnimFrame = requestAnimationFrame(decelerateAndStop);
+                } else {
+                    spinVelocity = 0;
+                    if (slowAnimFrame) cancelAnimationFrame(slowAnimFrame);
+                    slowAnimFrame = null;
+                    isStopping = false;
+                    showPrizeWindow(targetPrize, isLastAttempt);
+                }
+            }
+            
+            if (slowAnimFrame) cancelAnimationFrame(slowAnimFrame);
+            slowAnimFrame = requestAnimationFrame(decelerateAndStop);
+        }
+
+        function spinAnimation() {
+            if (!spinning) return;
+            
+            currentAngle += spinVelocity * 0.035;
+            currentAngle = currentAngle % (2 * Math.PI);
+            drawWheel();
+            
+            if (spinVelocity > 0.8) {
+                spinVelocity *= 0.999;
+            }
+            
+            animFrame = requestAnimationFrame(spinAnimation);
+        }
+
+        function startNewSpinAttempt() {
+            if (attemptsUsed >= 3) {
+                gameActive = false;
+                document.getElementById('stopBtn').disabled = true;
+                return;
+            }
+            
+            if (animFrame) {
+                cancelAnimationFrame(animFrame);
+                animFrame = null;
+            }
+            if (slowAnimFrame) {
+                cancelAnimationFrame(slowAnimFrame);
+                slowAnimFrame = null;
+            }
+            
+            spinning = false;
+            isStopping = false;
+            
+            const target = getTargetPrizeForAttempt(attemptsUsed);
+            currentTargetPrizeIndex = findSectorIndex(target);
+            
+            document.getElementById('stopBtn').disabled = false;
+            
+            spinVelocity = 24 + Math.random() * 12;
+            spinning = true;
+            
+            spinAnimation();
+        }
+
+        function initFirstAttempt() {
+            attemptsUsed = 0;
+            gameActive = true;
+            updateAttemptUI();
+            
+            const target = getTargetPrizeForAttempt(0);
+            currentTargetPrizeIndex = findSectorIndex(target);
+            
+            document.getElementById('stopBtn').disabled = false;
+            
+            spinVelocity = 25 + Math.random() * 12;
+            spinning = true;
+            
+            spinAnimation();
+        }
+
+        const stopBtn = document.getElementById('stopBtn');
+        stopBtn.addEventListener('click', () => {
+            if (!gameActive) return;
+            if (spinning && !isStopping) {
+                spinning = false;
+                if (animFrame) {
+                    cancelAnimationFrame(animFrame);
+                    animFrame = null;
+                }
+                stopBtn.disabled = true;
+                start5SecondDeceleration();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
+
+        resizeCanvas();
+        initFirstAttempt();
+    })();
+</script>
+</body>
+</html>
