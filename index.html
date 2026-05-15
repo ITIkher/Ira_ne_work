@@ -339,16 +339,16 @@
         let width, height;
 
         let currentAngle = 0;
-        let spinning = false;
+        let spinning = true;
         let animFrame = null;
-        let spinVelocity = 0;
+        let spinVelocity = 18;
         
         let attemptsUsed = 0;
         let gameActive = true;
         let currentTargetPrizeIndex = -1;
         
-        let isStopping = false;
-        let slowAnimFrame = null;
+        let isSpinningSlowly = false;
+        let slowTimer = null;
 
         const overlay = document.getElementById('prizeOverlay');
         const prizeWinText = document.getElementById('prizeWinText');
@@ -485,7 +485,10 @@
                     overlay.classList.remove('show');
                     attemptsUsed++;
                     updateAttemptUI();
-                    startNewSpinAttempt();
+                    // Возвращаем нормальную скорость
+                    spinVelocity = 20;
+                    isSpinningSlowly = false;
+                    if (slowTimer) clearTimeout(slowTimer);
                 };
                 prizeButtons.appendChild(againBtn);
             } else {
@@ -504,15 +507,11 @@
                     overlay.classList.remove('show');
                     gameActive = false;
                     document.getElementById('stopBtn').disabled = true;
+                    spinning = false;
                     if (animFrame) {
                         cancelAnimationFrame(animFrame);
                         animFrame = null;
                     }
-                    if (slowAnimFrame) {
-                        cancelAnimationFrame(slowAnimFrame);
-                        slowAnimFrame = null;
-                    }
-                    spinning = false;
                 };
                 prizeButtons.appendChild(finishBtn);
             }
@@ -520,53 +519,7 @@
             overlay.classList.add('show');
         }
 
-        // Функция: замедление 5 секунд, но НЕ ОСТАНАВЛИВАЕТСЯ, просто показывает приз
-        function start5SecondDeceleration() {
-            if (animFrame) {
-                cancelAnimationFrame(animFrame);
-                animFrame = null;
-            }
-            
-            spinning = false;
-            isStopping = true;
-            
-            const targetPrize = SECTORS[currentTargetPrizeIndex];
-            const isLastAttempt = (attemptsUsed === 2);
-            
-            const startVelocity = spinVelocity;
-            const startTime = performance.now();
-            const duration = 5000;
-            
-            function decelerateAndShow(now) {
-                const elapsed = now - startTime;
-                let t = Math.min(1, elapsed / duration);
-                // Плавное замедление, но не до 0
-                const currentVel = startVelocity * (1 - t * 0.85);
-                spinVelocity = Math.max(currentVel, 3);
-                
-                currentAngle += spinVelocity * 0.035;
-                currentAngle = currentAngle % (2 * Math.PI);
-                drawWheel();
-                
-                if (t < 1) {
-                    slowAnimFrame = requestAnimationFrame(decelerateAndShow);
-                } else {
-                    // Через 5 секунд показываем приз, колесо продолжает крутиться
-                    if (slowAnimFrame) cancelAnimationFrame(slowAnimFrame);
-                    slowAnimFrame = null;
-                    isStopping = false;
-                    showPrizeWindow(targetPrize, isLastAttempt);
-                    // Колесо продолжает крутиться с малой скоростью
-                    spinning = true;
-                    spinVelocity = 5;
-                    spinAnimation();
-                }
-            }
-            
-            if (slowAnimFrame) cancelAnimationFrame(slowAnimFrame);
-            slowAnimFrame = requestAnimationFrame(decelerateAndShow);
-        }
-
+        // Анимация вращения (постоянно)
         function spinAnimation() {
             if (!spinning) return;
             
@@ -574,11 +527,40 @@
             currentAngle = currentAngle % (2 * Math.PI);
             drawWheel();
             
-            if (spinVelocity > 0.8) {
-                spinVelocity *= 0.999;
+            animFrame = requestAnimationFrame(spinAnimation);
+        }
+
+        // Замедление на 5 секунд, но не остановка
+        function slowDownAndShowPrize() {
+            const targetPrize = SECTORS[currentTargetPrizeIndex];
+            const isLastAttempt = (attemptsUsed === 2);
+            
+            // Запоминаем текущую скорость
+            const originalSpeed = spinVelocity;
+            
+            // Плавно уменьшаем скорость
+            let startTime = performance.now();
+            const duration = 5000; // 5 секунд
+            const startVelocity = spinVelocity;
+            
+            function slowStep(now) {
+                const elapsed = now - startTime;
+                let t = Math.min(1, elapsed / duration);
+                // Скорость уменьшается до 20% от исходной
+                const newVel = startVelocity * (1 - t * 0.8);
+                spinVelocity = Math.max(newVel, 3);
+                
+                if (t < 1) {
+                    requestAnimationFrame(slowStep);
+                } else {
+                    // Через 5 секунд показываем приз
+                    // Скорость возвращается к норме
+                    spinVelocity = originalSpeed;
+                    showPrizeWindow(targetPrize, isLastAttempt);
+                }
             }
             
-            animFrame = requestAnimationFrame(spinAnimation);
+            requestAnimationFrame(slowStep);
         }
 
         function startNewSpinAttempt() {
@@ -588,27 +570,12 @@
                 return;
             }
             
-            if (animFrame) {
-                cancelAnimationFrame(animFrame);
-                animFrame = null;
-            }
-            if (slowAnimFrame) {
-                cancelAnimationFrame(slowAnimFrame);
-                slowAnimFrame = null;
-            }
-            
-            spinning = false;
-            isStopping = false;
-            
             const target = getTargetPrizeForAttempt(attemptsUsed);
             currentTargetPrizeIndex = findSectorIndex(target);
             
             document.getElementById('stopBtn').disabled = false;
-            
-            spinVelocity = 24 + Math.random() * 12;
-            spinning = true;
-            
-            spinAnimation();
+            spinVelocity = 20;
+            isSpinningSlowly = false;
         }
 
         function initFirstAttempt() {
@@ -620,24 +587,19 @@
             currentTargetPrizeIndex = findSectorIndex(target);
             
             document.getElementById('stopBtn').disabled = false;
-            
-            spinVelocity = 25 + Math.random() * 12;
+            spinVelocity = 22;
             spinning = true;
-            
             spinAnimation();
         }
 
+        // Кнопка "Остановить" — замедление на 5 секунд, потом приз
         const stopBtn = document.getElementById('stopBtn');
         stopBtn.addEventListener('click', () => {
             if (!gameActive) return;
-            if (spinning && !isStopping) {
-                spinning = false;
-                if (animFrame) {
-                    cancelAnimationFrame(animFrame);
-                    animFrame = null;
-                }
+            if (!isSpinningSlowly) {
+                isSpinningSlowly = true;
                 stopBtn.disabled = true;
-                start5SecondDeceleration();
+                slowDownAndShowPrize();
             }
         });
 
