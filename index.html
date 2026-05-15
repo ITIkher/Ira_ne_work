@@ -473,42 +473,52 @@
             drawWheel();
         }
 
-        function showPrizeWindow(prizeText, isLast) {
-            prizeWinText.innerText = prizeText;
-            prizeButtons.innerHTML = '';
-            
-            if (!isLast) {
-                const againBtn = document.createElement('button');
-                againBtn.innerText = "ЕЩЁ РАЗ";
-                againBtn.className = 'prize-again-btn';
-                againBtn.onclick = () => {
-                    overlay.classList.remove('show');
-                    attemptsUsed++;
-                    updateAttemptUI();
-                    startNewSpinAttempt();
-                };
-                prizeButtons.appendChild(againBtn);
-            } else {
-                const lookBtn = document.createElement('button');
-                lookBtn.innerText = "Хочу посмотреть!";
-                lookBtn.className = 'look-btn';
-                lookBtn.onclick = () => {
-                    window.open('1000100861.png', '_blank');
-                };
-                prizeButtons.appendChild(lookBtn);
-                
-                const finishBtn = document.createElement('button');
-                finishBtn.innerText = "ЗАВЕРШИТЬ";
-                finishBtn.className = 'prize-again-btn';
-                finishBtn.onclick = () => {
-                    overlay.classList.remove('show');
-                    gameActive = false;
-                    document.getElementById('stopBtn').disabled = true;
-                    if (animFrame) {
-                        cancelAnimationFrame(animFrame);
-                        animFrame = null;
-                    }
-                    if (slowAnimFrame) {
+function showPrizeWindow(prizeText, isLast) {
+    prizeWinText.innerText = prizeText;
+    prizeButtons.innerHTML = '';
+    
+    if (!isLast) {
+        const againBtn = document.createElement('button');
+        againBtn.innerText = "ЕЩЁ РАЗ";
+        againBtn.className = 'prize-again-btn';
+        againBtn.onclick = () => {
+            overlay.classList.remove('show');
+            attemptsUsed++;
+            updateAttemptUI();
+            startNewSpinAttempt();
+        };
+        prizeButtons.appendChild(againBtn);
+    } else {
+        const lookBtn = document.createElement('button');
+        lookBtn.innerText = "Хочу посмотреть!";
+        lookBtn.className = 'look-btn';
+        lookBtn.onclick = () => {
+            window.open('1000100861.png', '_blank');
+        };
+        prizeButtons.appendChild(lookBtn);
+        
+        const finishBtn = document.createElement('button');
+        finishBtn.innerText = "ЗАВЕРШИТЬ";
+        finishBtn.className = 'prize-again-btn';
+        finishBtn.onclick = () => {
+            overlay.classList.remove('show');
+            gameActive = false;
+            document.getElementById('stopBtn').disabled = true;
+            if (animFrame) {
+                cancelAnimationFrame(animFrame);
+                animFrame = null;
+            }
+            if (slowAnimFrame) {
+                cancelAnimationFrame(slowAnimFrame);
+                slowAnimFrame = null;
+            }
+            spinning = false;
+        };
+        prizeButtons.appendChild(finishBtn);
+    }
+    
+    overlay.classList.add('show');
+}
                         cancelAnimationFrame(slowAnimFrame);
                         slowAnimFrame = null;
                     }
